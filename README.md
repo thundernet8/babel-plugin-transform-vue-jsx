@@ -1,4 +1,4 @@
-# babel-plugin-transform-vue-jsx [![CircleCI](https://img.shields.io/circleci/project/vuejs/babel-plugin-transform-vue-jsx.svg?maxAge=2592000)](https://circleci.com/gh/vuejs/babel-plugin-transform-vue-jsx)
+# babel-plugin-transform-vue-tsx [![Build Status](https://travis-ci.org/thundernet8/babel-plugin-transform-vue-tsx.svg?branch=master)](https://travis-ci.org/thundernet8/babel-plugin-transform-vue-tsx)
 
 # Note
 
