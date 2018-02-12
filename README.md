@@ -1,19 +1,57 @@
 # babel-plugin-transform-vue-jsx [![CircleCI](https://img.shields.io/circleci/project/vuejs/babel-plugin-transform-vue-jsx.svg?maxAge=2592000)](https://circleci.com/gh/vuejs/babel-plugin-transform-vue-jsx)
 
-> Babel plugin for Vue 2.0 JSX
+# Note
+
+此插件基于[babel-plugin-transform-vue-jsx](https://github.com/vuejs/babel-plugin-transform-vue-jsx)修改，解决 TSX 语法严格类型下的一些问题:
+
+对于 tsx, 标签的类型是限定的，为了支持其他类库的自定义组件正常使用，在[vue-tsx-helper](https://github.com/thundernet8/Vue-TSX-Helper)库中提供了 anyslot 标签，包含必须属性 is，其值为目标组件 id
+例如在 TSX 中添加一个 vue-router link
+使用`<RouterLink></RouterLink>`会报类型错误，但 TypeScript 认为固有标签应该全部是小写，因此也无法定义 `RouterLink` 的 type
+使用`<router-link></router-link>`不适合 TSX 语法，因为不允许-字符
+
+因此可以使用如下
+
+```typescript
+import { Component, Prop } from "vue-property-decorator";
+import { VueComponent } from "vue-tsx-helper"; // 同时全局提供了anyslot的类型定义
+import TestComponent from "../TestComponent";
+
+/**
+ * Vue component props types
+ */
+interface IProps {}
+
+@Component
+export default class WrapTestComponent extends VueComponent<IProps> {
+  @Prop() msg;
+
+  render(h) {
+    return (
+      <TestComponent msg={"msg from parent"}>
+        <h2>Page writed without .vue but plain tsx</h2>
+        <anyslot is="router-link" to="/">
+          Back to home
+        </anyslot>
+      </TestComponent>
+    );
+  }
+}
+```
+
+> Babel plugin for Vue 2.0 TSX
 
 ### Requirements
 
-- Assumes you are using Babel with a module bundler e.g. Webpack, because the spread merge helper is imported as a module to avoid duplication.
+* Assumes you are using Babel with a module bundler e.g. Webpack, because the spread merge helper is imported as a module to avoid duplication.
 
-- This is mutually exclusive with `babel-plugin-transform-react-jsx`.
+* This is mutually exclusive with `babel-plugin-transform-react-jsx`.
 
 ### Usage
 
-``` bash
+```bash
 npm install\
   babel-plugin-syntax-jsx\
-  babel-plugin-transform-vue-jsx\
+  babel-plugin-transform-vue-tsx\
   babel-helper-vue-jsx-merge-props\
   babel-preset-env\
   --save-dev
@@ -21,61 +59,69 @@ npm install\
 
 In your `.babelrc`:
 
-``` json
+```json
 {
   "presets": ["env"],
-  "plugins": ["transform-vue-jsx"]
+  "plugins": ["transform-vue-tsx"]
 }
 ```
 
 The plugin transpiles the following JSX:
 
-``` jsx
+```jsx
 <div id="foo">{this.text}</div>
 ```
 
 To the following JavaScript:
 
-``` js
-h('div', {
-  attrs: {
-    id: 'foo'
-  }
-}, [this.text])
+```js
+h(
+  "div",
+  {
+    attrs: {
+      id: "foo"
+    }
+  },
+  [this.text]
+);
 ```
 
 Note the `h` function, which is a shorthand for a Vue instance's `$createElement` method, must be in the scope where the JSX is. Since this method is passed to component render functions as the first argument, in most cases you'd do this:
 
-``` js
-Vue.component('jsx-example', {
-  render (h) { // <-- h must be in scope
-    return <div id="foo">bar</div>
+```js
+Vue.component("jsx-example", {
+  render(h) {
+    // <-- h must be in scope
+    return <div id="foo">bar</div>;
   }
-})
+});
 ```
 
 ### `h` auto-injection
 
 Starting with version 3.4.0 we automatically inject `const h = this.$createElement` in any method and getter (not functions or arrow functions) declared in ES2015 syntax that has JSX so you can drop the `(h)` parameter.
 
-``` js
-
-Vue.component('jsx-example', {
-  render () { // h will be injected
-    return <div id="foo">bar</div>
+```js
+Vue.component("jsx-example", {
+  render() {
+    // h will be injected
+    return <div id="foo">bar</div>;
   },
-  myMethod: function () { // h will not be injected
-    return <div id="foo">bar</div>
+  myMethod: function() {
+    // h will not be injected
+    return <div id="foo">bar</div>;
   },
-  someOtherMethod: () => { // h will not be injected
-    return <div id="foo">bar</div>
+  someOtherMethod: () => {
+    // h will not be injected
+    return <div id="foo">bar</div>;
   }
-})
+});
 
 @Component
 class App extends Vue {
-  get computed () { // h will be injected
-    return <div id="foo">bar</div>
+  get computed() {
+    // h will be injected
+    return <div id="foo">bar</div>;
   }
 }
 ```
@@ -84,7 +130,7 @@ class App extends Vue {
 
 First, Vue 2.0's vnode format is different from React's. The second argument to the `createElement` call is a "data object" that accepts nested objects. Each nested object will be then processed by corresponding modules:
 
-``` js
+```js
 render (h) {
   return h('div', {
     // Component props
@@ -134,7 +180,7 @@ render (h) {
 
 The equivalent of the above in Vue 2.0 JSX is:
 
-``` jsx
+```jsx
 render (h) {
   return (
     <div
@@ -162,30 +208,30 @@ render (h) {
 
 If a custom element starts with lowercase, it will be treated as a string id and used to lookup a registered component. If it starts with uppercase, it will be treated as an identifier, which allows you to do:
 
-``` js
-import Todo from './Todo.js'
+```js
+import Todo from "./Todo.js";
 
 export default {
-  render (h) {
-    return <Todo/> // no need to register Todo via components option
+  render(h) {
+    return <Todo />; // no need to register Todo via components option
   }
-}
+};
 ```
 
 ### JSX Spread
 
 JSX spread is supported, and this plugin will intelligently merge nested data properties. For example:
 
-``` jsx
+```jsx
 const data = {
-  class: ['b', 'c']
-}
-const vnode = <div class="a" {...data}/>
+  class: ["b", "c"]
+};
+const vnode = <div class="a" {...data} />;
 ```
 
 The merged data will be:
 
-``` js
+```js
 { class: ['a', 'b', 'c'] }
 ```
 
@@ -199,10 +245,8 @@ For custom directives, you can use the `v-name={value}` syntax. However, note th
 
 2. Use the raw vnode directive data format:
 
-``` js
-const directives = [
-  { name: 'my-dir', value: 123, modifiers: { abc: true } }
-]
+```js
+const directives = [{ name: "my-dir", value: 123, modifiers: { abc: true } }];
 
-return <div {...{ directives }}/>
+return <div {...{ directives }} />;
 ```

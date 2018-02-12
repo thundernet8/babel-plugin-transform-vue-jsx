@@ -124,8 +124,8 @@ module.exports = function(babel) {
     var isAttrib =
       Array.isArray(attribs) && attribs.length
         ? attribs.find(
-            item =>
-              item.name.name === "is" && attrib.value && attrib.value.value
+            attrib =>
+              attrib.name.name === "is" && attrib.value && attrib.value.value
           )
         : null;
     if (tagName === "anyslot" && isAttrib) {
